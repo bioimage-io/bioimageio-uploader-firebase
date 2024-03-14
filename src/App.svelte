@@ -4,6 +4,7 @@
     import {Route, router} from 'tinro'; 
     import { onMount } from 'svelte';
     import authStore from "./stores/authStore";
+    import { get_temporary_upload_url } from  "./stores/functions";
     //import {Home} from 'lucide-svelte';
     //import {fade} from 'svelte/transition';
     import Uploader from './components/Uploader/index.svelte';
@@ -18,7 +19,9 @@
     import * as firebaseui from 'firebaseui';
     import 'firebaseui/dist/firebaseui.css';
     import { getFunctions, httpsCallable } from "firebase/functions";
+    import { Uploader as UploaderClass } from './lib/uploader';
 
+    let uploader = new UploaderClass();
 
 
     import { getAuth, signOut } from 'firebase/auth';
@@ -105,15 +108,17 @@
       };
 
     let auth;
-    let app;
-    let functions;
+    const app = initializeApp(firebaseConfig);
+    const analytics = getAnalytics(app);
+    const functions = getFunctions(app);
+
+    uploader.get_temporary_upload_url = httpsCallable(functions, 'get_temporary_upload_url');
+
+    
+
 
     onMount(async () => {
         // Initialize Firebase
-        app = initializeApp(firebaseConfig);
-        const analytics = getAnalytics(app);
-        //functions = getFunctions(app);
-        //const hello_world = httpsCallable(functions, 'hello_world');
         //let result = await hello_world({ text: 'aaaa'});
         //// Read result of the Cloud Function.
         //var sanitizedMessage = result.data.message;
@@ -127,7 +132,7 @@
         auth.onAuthStateChanged((new_user) => {
             authStore.set({
                 isLoggedIn: new_user !== null,
-                new_user,
+                user: new_user,
                 firebaseControlled: true,
             });
             user = new_user;
@@ -163,13 +168,13 @@
   {#if user}
       <button on:click={handleSignout} >Logout</button>
   {:else}
-      <div id="firebaseui-auth-container">Logins</div>
+      <div id="firebaseui-auth-container"></div>
   {/if}
   
 
 <Transition> 
     <Route path="/">
-        <Uploader />
+        <Uploader { uploader } />
     </Route>
     <Route path="/status">
         <Status />

@@ -4,6 +4,7 @@ import axios from 'axios';
 import { Validator } from '@cfworker/json-schema';
 import Ajv from 'ajv';
 
+import generate_name from './generate_name';
 
 import { FileFromJSZipZipOject, clean_rdf } from "./utils.ts";
 //import { fetch_with_progress } from "./utils.ts";
@@ -11,14 +12,17 @@ import { FileFromJSZipZipOject, clean_rdf } from "./utils.ts";
 import yaml from "js-yaml";
 import { default as JSZip } from "jszip";
 
+import { getFunctions, httpsCallable } from "firebase/functions";
+
+
 const regex_zip = /\.zip$/gi;
 const regex_rdf = /(rdf\.yml|rdf\.yaml|bioimage\.yml|bioimage\.yaml)$/gi;
 const ajv = new Ajv({allErrors: true, strict: false});
 
 const hostname = `${window.location.protocol}//${window.location.host}`;
-const generate_name_url = `${hostname}/.netlify/functions/generate_name`;
-const notify_ci_url = `${hostname}/.netlify/functions/notify_ci`;
-const validator_url = "https://raw.githubusercontent.com/bioimage-io/spec-bioimage-io/main/scripts/bio-rdf-validator.imjoy.html"
+//const generate_name_url = `${hostname}/.netlify/functions/generate_name`;
+//const notify_ci_url = `${hostname}/.netlify/functions/notify_ci`;
+//const validator_url = "https://raw.githubusercontent.com/bioimage-io/spec-bioimage-io/main/scripts/bio-rdf-validator.imjoy.html"
 const url_json_schema_latest = "https://raw.githubusercontent.com/bioimage-io/spec-bioimage-io/gh-pages/bioimageio_schema_latest.json"; 
 //const validator_url = `${hostname}/static/bio-rdf-validator.imjoy.html`
 
@@ -255,20 +259,13 @@ export class Uploader {
     }
 
     async regenerate_nickname() {
-        try {
-            const model_name = Object.assign(new ResourceId, await (await fetch(generate_name_url)).json());
-            console.log("Generated name:", model_name);
-            const error = "";
-            this.resource_path = model_name;
-            this.rdf.nickname = model_name.id;
-            this.rdf.id_emoji = model_name.emoji;
-            return { model_name, error };
-        } catch (err) {
-            console.error("Failed to generate name:")
-            console.error(err);
-            console.error(`URL used: ${generate_name_url}`);
-            throw Error(err);
-        }
+        const model_name = await generate_name();
+        console.log("Generated name:", model_name);
+        const error = "";
+        this.resource_path = model_name;
+        this.rdf.nickname = model_name.id;
+        this.rdf.id_emoji = model_name.emoji;
+        return { model_name, error };
     }
 
     async upload_file(file: File, progress_callback: null | ((val: string, tot: string) => null)) {
@@ -301,7 +298,10 @@ export class Uploader {
         const filename = `${this.resource_path.id}/${file.name}`;
         try {
             //return await hypha.upload_file(file, filename, onUploadProgress);
-            throw new Error("Replacement upload - function + S3");
+            const url_put = await this.get_temporary_upload_url({filename});
+            const config = {'onUploadProgress': progress_callback }; 
+            const response = await axios.put(url_put, file, config);
+            
         } catch (error) {
             console.error("Upload failed!");
             console.error(error);
@@ -343,10 +343,6 @@ export class Uploader {
         this.render();
         const zipfile = await this.create_zip();
         this.render();
-        console.log(`
-            hostname                : ${hostname}
-            generate_name_url       : ${generate_name_url}
-            notify_ci_url           : ${notify_ci_url}`);
 
         this.zip_urls = await this.upload_file(zipfile, null);
 

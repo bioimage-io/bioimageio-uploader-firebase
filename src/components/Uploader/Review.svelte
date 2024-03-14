@@ -9,6 +9,7 @@
     import Highlight from "svelte-highlight";
     import {yaml as yamlsyntax} from "svelte-highlight/languages/yaml";
     import atlas from "svelte-highlight/styles/atlas";
+    import authStore from "../../stores/authStore";
 
     export let uploader : Uploader;
 
@@ -36,6 +37,16 @@
         uploader.publish();
         is_done();
     }
+
+    let user;
+
+    authStore.subscribe(async (store) => {
+        console.log("authStore");
+        console.log(store);
+        user = store.user; 
+        if(user) uploader.set_email(user.email);
+        toggle_rerender();
+    });
 
     function toggle_rerender(){
         resource_path = uploader.resource_path;
@@ -66,42 +77,37 @@
     {@html atlas}
 </svelte:head>
 
-{#key rerender}
 
-<!--{#key hypha.server}-->
-    <!--{#if !hypha.token}-->
-    {#if true }
+{#if user === undefined}
 
-        <Notification deletable={false} >
-            Login
-            <!--Login to the BioEngine to enable Upload -->
-            <!--<HyphaLogin {hypha} modal={false} />-->
-        </Notification>
-    {:else}
-        <!--{#key hypha.user_email }-->
-            <!--{#if hypha.user_email}-->
-            {#if true}
-                <p class="level">
-                    {#if model_name_message }({model_name_message}){/if}
-                    {#if resource_path}
-                        Your model nickname is:
-                        <code style="min-width:10em;">{resource_path.id} {resource_path.emoji}&nbsp;</code>
-                    {/if}
-                    <button on:click={regenerate_nickname}>Regenerate nickname</button>
-                </p>
-                <p>Please review your submission carefully, then press Upload</p>
-                
-                {#if ready_to_publish}
-                    <button class="button is-primary" on:click={publish}>Upload</button>
+    <Notification deletable={false} >
+        Please login above 
+        <!--Login to the BioEngine to enable Upload -->
+        <!--<HyphaLogin {hypha} modal={false} />-->
+    </Notification>
+{:else}
+    <!--{#key hypha.user_email }-->
+        <!--{#if hypha.user_email}-->
+        {#if true}
+            <p class="level">
+                {#if model_name_message }({model_name_message}){/if}
+                {#if resource_path}
+                    Your model nickname is:
+                    <code style="min-width:10em;">{resource_path.id} {resource_path.emoji}&nbsp;</code>
                 {/if}
-
-
-            {:else}
-                <article>Populating RDF with user-email</article>
+                <button on:click={regenerate_nickname}>Regenerate nickname</button>
+            </p>
+            <p>Hi {user.displayName}, please review your submission carefully, then press Upload</p>
+            
+            {#if ready_to_publish}
+                <button class="button is-primary" on:click={publish}>Upload</button>
             {/if}
-        <!--{/key}-->
-    {/if}
-<!--{/key}-->
+
+
+        {:else}
+            <article>Populating RDF with user-email</article>
+        {/if}
+{/if}
 
 <ButtonWithConfirmation confirm={reset}>
     Clear model + start again
@@ -114,4 +120,3 @@
     <!--{/key}-->
 </article>
 
-{/key}

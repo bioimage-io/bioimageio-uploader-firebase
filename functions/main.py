@@ -30,7 +30,7 @@ def is_reviewer(req: https_fn.CallableRequest) -> Any:
 @https_fn.on_call(secrets=["S3_ACCESS_KEY_ID", "S3_SECRET_ACCESS_KEY"])
 def get_temporary_upload_url(req: https_fn.CallableRequest) -> Any:
 
-    lifetime=timedelta(hours=1)
+    # lifetime=timedelta(hours=1)
     if req.auth is None:
         raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.FAILED_PRECONDITION,
                                   message="The function must be called while authenticated.")
@@ -44,11 +44,10 @@ def get_temporary_upload_url(req: https_fn.CallableRequest) -> Any:
         os.environ["S3_ACCESS_KEY_ID"],
         os.environ["S3_SECRET_ACCESS_KEY"],
     )
-    url = client.get_presigned_url(
-        "PUT",
+
+    url = client.presigned_put_object(
         os.environ["S3_BUCKET_NAME"],
         path,
-        expires=lifetime,
     )
     return {"url": url}
 

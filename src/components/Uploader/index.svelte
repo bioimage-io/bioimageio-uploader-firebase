@@ -11,7 +11,7 @@
     import ButtonWithConfirmation from './ButtonWithConfirmation.svelte';
 
 
-    let uploader = new Uploader();
+    export let uploader;  
 
     let step = "add";
 
