@@ -18,3 +18,9 @@ jobs:
           firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_BIOIMAGEIO_FB463 }}'
           channelId: live
           projectId: bioimageio-fb463
+      - name: GitHub Action for Firebase
+        uses: w9jds/firebase-action@v13.5.0
+        with:
+          args: deploy --only functions
+        env:
+          GCP_SA_KEY: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_BIOIMAGEIO_FB463 }}'

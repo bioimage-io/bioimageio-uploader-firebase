@@ -1,0 +1,117 @@
+<script lang="ts">
+	import { onDestroy } from 'svelte';
+    import { createEventDispatcher } from 'svelte';
+    //import toast from 'svelte-french-toast';
+    import Notification from '../Notification.svelte';
+    import ButtonWithConfirmation from './ButtonWithConfirmation.svelte';
+    import { Uploader } from '../../lib/uploader';
+    import yaml from "js-yaml";
+    import Highlight from "svelte-highlight";
+    import {yaml as yamlsyntax} from "svelte-highlight/languages/yaml";
+    import atlas from "svelte-highlight/styles/atlas";
+
+    export let uploader : Uploader;
+
+    import JSONTree from 'svelte-json-tree';
+    let model_name_message = "";
+    let rerender = false;
+    let resource_path = uploader.resource_path;
+    let rdf = uploader.rdf;
+    let ready_to_publish = uploader.ready_to_publish();
+    const dispatch = createEventDispatcher();
+
+    onDestroy(() => {
+        uploader.clear_render_callback();
+	});
+
+    function is_done() {
+        dispatch('done');
+    }
+
+    function reset(){
+        dispatch('reset');
+    }
+
+    async function publish(){
+        uploader.publish();
+        is_done();
+    }
+
+    function toggle_rerender(){
+        resource_path = uploader.resource_path;
+        ready_to_publish = uploader.ready_to_publish();
+        rerender = !rerender;
+    }
+
+    async function regenerate_nickname(){
+        await uploader.regenerate_nickname();
+        console.log("Ready to publish?", ready_to_publish);
+        rdf = uploader.rdf;
+        toggle_rerender();
+    }
+
+    if(!resource_path) regenerate_nickname();
+    if(uploader){
+        uploader.add_render_callback(toggle_rerender);
+        //if(!hypha.server){
+            ////uploader.loginHypha(hypha).then(() => {uploader.set_email(hypha.user_email)});
+        //}else{
+            //uploader.set_email(hypha.user_email);
+        //}
+    }
+
+</script>
+
+<svelte:head>
+    {@html atlas}
+</svelte:head>
+
+{#key rerender}
+
+<!--{#key hypha.server}-->
+    <!--{#if !hypha.token}-->
+    {#if true }
+
+        <Notification deletable={false} >
+            Login
+            <!--Login to the BioEngine to enable Upload -->
+            <!--<HyphaLogin {hypha} modal={false} />-->
+        </Notification>
+    {:else}
+        <!--{#key hypha.user_email }-->
+            <!--{#if hypha.user_email}-->
+            {#if true}
+                <p class="level">
+                    {#if model_name_message }({model_name_message}){/if}
+                    {#if resource_path}
+                        Your model nickname is:
+                        <code style="min-width:10em;">{resource_path.id} {resource_path.emoji}&nbsp;</code>
+                    {/if}
+                    <button on:click={regenerate_nickname}>Regenerate nickname</button>
+                </p>
+                <p>Please review your submission carefully, then press Upload</p>
+                
+                {#if ready_to_publish}
+                    <button class="button is-primary" on:click={publish}>Upload</button>
+                {/if}
+
+
+            {:else}
+                <article>Populating RDF with user-email</article>
+            {/if}
+        <!--{/key}-->
+    {/if}
+<!--{/key}-->
+
+<ButtonWithConfirmation confirm={reset}>
+    Clear model + start again
+</ButtonWithConfirmation>
+
+<article class="contrast" style="--card-background-color: var(--contrast)">
+    <!--{#key hypha.user_email }-->
+    <!--JSONTree defaultExpandedLevel={1} value={rdf}/-->
+        <Highlight language={yamlsyntax} code={yaml.dump(rdf)} /> 
+    <!--{/key}-->
+</article>
+
+{/key}

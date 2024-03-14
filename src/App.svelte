@@ -1,9 +1,15 @@
-<script lang="ts">
+<script>
+    // import "@picocss/pico/css/pico.css"; 
+    import "./app.scss";
+    import {Route, router} from 'tinro'; 
     import { onMount } from 'svelte';
-    import svelteLogo from './assets/svelte.svg'
-    //import viteLogo from '/vite.svg'
-    import Counter from './lib/Counter.svelte'
     import authStore from "./stores/authStore";
+    //import {Home} from 'lucide-svelte';
+    //import {fade} from 'svelte/transition';
+    import Uploader from './components/Uploader/index.svelte';
+    import Status from './components/Status.svelte';
+    import Transition from './components/Transition.svelte';
+    router.mode.hash();
 
     // Import the functions you need from the SDKs you need
     import firebase from 'firebase/compat/app';
@@ -73,24 +79,14 @@
         signInOptions: [
           // Leave the lines as is for the providers you want to offer your users.
           firebase.auth.GoogleAuthProvider.PROVIDER_ID,
-          firebase.auth.FacebookAuthProvider.PROVIDER_ID,
-          firebase.auth.TwitterAuthProvider.PROVIDER_ID,
+          //firebase.auth.FacebookAuthProvider.PROVIDER_ID,
+          //firebase.auth.TwitterAuthProvider.PROVIDER_ID,
           firebase.auth.GithubAuthProvider.PROVIDER_ID,
           {
             provider: firebase.auth.EmailAuthProvider.PROVIDER_ID,
             // Whether the display name should be displayed in the Sign Up page.
             requireDisplayName: true
           },
-          {
-            provider: firebase.auth.PhoneAuthProvider.PROVIDER_ID,
-            // Invisible reCAPTCHA with image challenge and bottom left badge.
-            recaptchaParameters: {
-              type: 'image',
-              size: 'invisible',
-              badge: 'bottomleft'
-            }
-          },
-          firebaseui.auth.AnonymousAuthProvider.PROVIDER_ID
         ],
         // Set to true if you only have a single federated provider like
         // firebase.auth.GoogleAuthProvider.PROVIDER_ID and you would like to
@@ -116,15 +112,15 @@
         // Initialize Firebase
         app = initializeApp(firebaseConfig);
         const analytics = getAnalytics(app);
-        functions = getFunctions(app);
-        const hello_world = httpsCallable(functions, 'hello_world');
-        let result = await hello_world({ text: 'aaaa'});
-        // Read result of the Cloud Function.
-        var sanitizedMessage = result.data.message;
-        alert(sanitizedMessage);
+        //functions = getFunctions(app);
+        //const hello_world = httpsCallable(functions, 'hello_world');
+        //let result = await hello_world({ text: 'aaaa'});
+        //// Read result of the Cloud Function.
+        //var sanitizedMessage = result.data.message;
+        //alert(sanitizedMessage);
         
-        auth = getAuth(app);
         console.log(app);
+        auth = getAuth(app);
         console.log(auth);
         var ui = new firebaseui.auth.AuthUI(auth);
         ui.start('#firebaseui-auth-container', uiConfig);
@@ -152,29 +148,18 @@
 
     }
 </script>
+<style>
+</style>
 
-<main>
-  <div>
-    <a href="https://svelte.dev" target="_blank" rel="noreferrer">
-      <img src={svelteLogo} class="logo svelte" alt="Svelte Logo" />
-    </a>
-  </div>
-  <h1>Vite + Svelte</h1>
-  <div id="loader">I'm a loader</div>
-
-  <div class="card">
-    {#if user}
-        <h2>Hi {user.displayName}</h2>
-    {/if}    
-    <Counter />
-  </div>
-
-
-  <p>
-    Check out <a href="https://github.com/sveltejs/kit#readme" target="_blank" rel="noreferrer">SvelteKit</a>, the official Svelte app framework powered by Vite!
-  </p>
-
-  
+<nav class="container-fluid">
+    <ul>
+        <li><strong>BioImage.IO</strong></li>
+    </ul>
+    <ul>
+        <li><a href="/">Uploader</a></li>
+        <li><a href="/status">Status</a></li>
+    </ul>
+</nav>
   {#if user}
       <button on:click={handleSignout} >Logout</button>
   {:else}
@@ -182,26 +167,14 @@
   {/if}
   
 
-
-  <p class="read-the-docs">
-    Click on the Vite and Svelte logos to learn more
-  </p>
-</main>
-
-<style>
-  .logo {
-    height: 6em;
-    padding: 1.5em;
-    will-change: filter;
-    transition: filter 300ms;
-  }
-  .logo:hover {
-    filter: drop-shadow(0 0 2em #646cffaa);
-  }
-  .logo.svelte:hover {
-    filter: drop-shadow(0 0 2em #ff3e00aa);
-  }
-  .read-the-docs {
-    color: #888;
-  }
-</style>
+<Transition> 
+    <Route path="/">
+        <Uploader />
+    </Route>
+    <Route path="/status">
+        <Status />
+    </Route>
+    <Route path="/status/:resource_id" let:meta>
+        <Status resource_id={meta.params.resource_id} />
+    </Route>
+</Transition>
