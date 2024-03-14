@@ -22,7 +22,7 @@
     // Your web app's Firebase configuration
     // For Firebase JS SDK v7.20.0 and later, measurementId is optional
     const firebaseConfig = {
-      apiKey: "AIzaSyBW65ZyKiEKVLckWCDDrVMi_7CrtgiRJTw",
+      apiKey: "AIzaSyCrFU6IotD3jzjGusR_zDMoXhvsUl2h1TY", 
       authDomain: "bioimageio-fb463.firebaseapp.com",
       projectId: "bioimageio-fb463",
       storageBucket: "bioimageio-fb463.appspot.com",
@@ -178,7 +178,7 @@
   {#if user}
       <button on:click={handleSignout} >Logout</button>
   {:else}
-      <div id="firebaseui-auth-container"></div>
+      <div id="firebaseui-auth-container">Logins</div>
   {/if}
   
 
