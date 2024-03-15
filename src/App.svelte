@@ -8,6 +8,9 @@
     //import {fade} from 'svelte/transition';
     import Uploader from './components/Uploader/index.svelte';
     import Status from './components/Status.svelte';
+    import StatusList from './components/StatusList.svelte';
+    import StatusPublished from './components/StatusPublished.svelte';
+    import StatusStaged from './components/StatusStaged.svelte';
     import Transition from './components/Transition.svelte';
     router.mode.hash();
 
@@ -228,6 +231,12 @@
         <Status { get_json } />
     </Route>
     <Route path="/status/:resource_id" let:meta>
-        <Status resource_id={meta.params.resource_id} { get_json } />
+        <StatusList resource_id={meta.params.resource_id} { get_json } />
+    </Route>
+    <Route path="/status/:resource_id/:version" let:meta>
+        <StatusPublished resource_id={meta.params.resource_id} version={meta.params.version} { get_json } />
+    </Route>
+    <Route path="/status/:resource_id/staged/:version" let:meta>
+        <StatusStaged resource_id={meta.params.resource_id} version={meta.params.version} { get_json } />
     </Route>
 </Transition>

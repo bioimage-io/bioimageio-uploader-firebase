@@ -25,7 +25,7 @@ def get_json(req: https_fn.CallableRequest) -> Any:
     url = req.data['url']
     try:
         data = requests.get(url).json()
-    except JSONDecodeError:
+    except json.JSONDecodeError:
         data = {}
     return data
 

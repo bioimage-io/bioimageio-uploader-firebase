@@ -14,7 +14,7 @@
     async function get_chat(){
         if(resource_id && get_json){
             //let new_chats = await get_chats(resource_id);
-            let new_chats = get_json({'url':`https://uk1s3.embassy.ebi.ac.uk/public-datasets/sandbox.bioimage.io/${resource_id}/staged/1/chat.json`});
+            let new_chats = await get_json({'url':`https://uk1s3.embassy.ebi.ac.uk/public-datasets/sandbox.bioimage.io/${resource_id}/staged/1/chat.json`});
             console.log(new_chats);
             if(Array.isArray(new_chats)){
                 chats = new_chats;
