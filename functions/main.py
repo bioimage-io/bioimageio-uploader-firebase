@@ -53,7 +53,7 @@ def get_temporary_upload_url(req: https_fn.CallableRequest) -> Any:
     return {"url": url}
 
 
-@https_fn.on_call()
+@https_fn.on_call(secrets=["GITHUB_TOKEN"])
 def stage(req: https_fn.CallableRequest) -> Any:
     if req.auth is None:
         raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.FAILED_PRECONDITION,
@@ -80,7 +80,7 @@ def stage(req: https_fn.CallableRequest) -> Any:
         # According to API docs, just expect a 204
         return { 'status': resp.status_code }
     else:
-        return {'message': "Failed", 'status':500}
+        return {'message': f"Failed :(  {resp.content}", 'status':500}
 
 
 @https_fn.on_call()

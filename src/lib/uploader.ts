@@ -366,11 +366,14 @@ export class Uploader {
         // trigger CI with the bioimageio bot endpoint
         try {
             const res = await this.ci_stage_firebase({
-                'resource_id': this.resource_path!.id,
+                'resource_path': this.resource_path!.id,
                 'package_url': this.zip_url,
             });
+            if(res.status !== 204){
+                throw new Error(`😬 Failed to reach to the bioimageio-bot, please report the issue to the admin team of bioimage.io: ${res.message}`);
+            } 
         } catch (err) {
-            throw new Error(`😬 Failed to reach to the bioimageio-bot, please report the issue to the admin team of bioimage.io: ${err}`);
+            throw new Error(`😬 Error calling bioimageio-bot, please report the issue to the admin team of bioimage.io: ${err}`);
         }
         this.render();
     }
