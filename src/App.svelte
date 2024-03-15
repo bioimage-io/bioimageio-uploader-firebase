@@ -163,6 +163,7 @@
         return url;
     } 
     uploader.ci_stage_firebase = httpsCallable(functions, 'stage');
+    let get_json = httpsCallable(functions, 'get_json');
 
     onMount(async () => {
         // Initialize Firebase
@@ -224,9 +225,9 @@
         <Uploader { uploader } />
     </Route>
     <Route path="/status">
-        <Status />
+        <Status { get_json } />
     </Route>
     <Route path="/status/:resource_id" let:meta>
-        <Status resource_id={meta.params.resource_id} />
+        <Status resource_id={meta.params.resource_id} { get_json } />
     </Route>
 </Transition>

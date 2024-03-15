@@ -4,6 +4,7 @@
 import os
 from typing import Any
 from datetime import timedelta
+import json
 
 import requests
 from minio import Minio
@@ -17,6 +18,16 @@ app = initialize_app()
 
 def _is_reviewer(email):
     return email in ("metz.jp@gmail.com", )
+
+
+@https_fn.on_call()
+def get_json(req: https_fn.CallableRequest) -> Any:
+    url = req.data['url']
+    try:
+        data = requests.get(url).json()
+    except JSONDecodeError:
+        data = {}
+    return data
 
 
 @https_fn.on_call()
@@ -64,7 +75,8 @@ def stage(req: https_fn.CallableRequest) -> Any:
     package_url = req.data['package_url']
     headers = {
         'Accept': 'application/vnd.github.v3+json',
-        'Authorization': f"token {os.environ['GITHUB_TOKEN']}"
+        'Authorization': f"token {os.environ['GITHUB_TOKEN']}",
+        'Content-Type': "application/json",
     }
     data = {
             'ref': os.environ['GITHUB_BRANCH'],
@@ -79,7 +91,9 @@ def stage(req: https_fn.CallableRequest) -> Any:
     print("data")
     print(data)
 
-    resp = requests.post(os.environ['GITHUB_URL_STAGE'], data=data, headers=headers)
+    resp = requests.post(os.environ['GITHUB_URL_STAGE'],
+                         data=json.dumps(data),
+                         headers=headers)
     if resp.status_code == 204:
         # According to API docs, just expect a 204
         return { 'status': resp.status_code }

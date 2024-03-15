@@ -2,6 +2,7 @@
     import { onMount } from 'svelte';
     import { get_chats, update_chat } from "../lib/chat.ts";
     export let resource_id="";
+    export let get_json;
 
     let chats=[];
 
@@ -11,8 +12,9 @@
     let chat_message="";
 
     async function get_chat(){
-        if(resource_id){
-            let new_chats = await get_chats(resource_id);
+        if(resource_id && get_json){
+            //let new_chats = await get_chats(resource_id);
+            let new_chats = get_json({'url':`https://uk1s3.embassy.ebi.ac.uk/public-datasets/sandbox.bioimage.io/${resource_id}/staged/1/chat.json`});
             console.log(new_chats);
             if(Array.isArray(new_chats)){
                 chats = new_chats;

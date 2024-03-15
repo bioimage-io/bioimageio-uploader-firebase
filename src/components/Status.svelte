@@ -10,6 +10,7 @@
     import Review from './Review.svelte';
 
     export let resource_id="";
+    export let get_json;
 
     let step = 0;
     let messages = [];
@@ -46,19 +47,29 @@
         clearTimeout(timeout_id);
     });
 
+
     async function poll_status(){
         if(resource_id){ 
             try{
-                const resp = await refresh_status(resource_id);
-                last_message = resp.status.name;
-                messages = resp.messages;
-                if((!Array.isArray(messages)) || (!is_string(last_message))){
-                    console.debug(resp);
-                    throw new Error("Unable to get status messages from server response");
+                if (get_json){
+                    //console.log(get_json);
+                    console.log("Get status:");
+                    resp = get_json({'url': `https://uk1s3.embassy.ebi.ac.uk/public-datasets/sandbox.bioimage.io/${resource_id}/staged/1/details.json`});
+                    console.log(resp);
+
+                //const resp = await refresh_status(resource_id);
+                    last_message = resp.status.name;
+                    messages = resp.messages;
+                    if((!Array.isArray(messages)) || (!is_string(last_message))){
+                        console.debug(resp);
+                        throw new Error("Unable to get status messages from server response");
+                    }
+                    step = resp.status.step;
+                    num_steps = resp.status.num_steps;
+                    polling_error = false;
+                }else{
+                    console.debug("get_json not set");
                 }
-                step = resp.status.step;
-                num_steps = resp.status.num_steps;
-                polling_error = false;
             }catch(err){
                 //messages = ["Error polling status 😬. Please let the dev-team know 🙏"];
                 last_message = "Error polling status 😬. Please let the dev-team know 🙏";
@@ -68,19 +79,19 @@
                 polling_error = true;
                 return;
             }
-        }
-        is_finished = last_message.startsWith("Publishing complete");
-        if(step > 0){
-            //value = `{status_step}`; 
-            value = `${step}`; 
-            max = `${num_steps}`; 
+            is_finished = last_message.startsWith("Publishing complete");
+            if(step > 0){
+                //value = `{status_step}`; 
+                value = `${step}`; 
+                max = `${num_steps}`; 
+            }
+            console.log(`Value ${value}, max ${max}`);
+
         }
 
         if(!is_finished){
             timeout_id = setTimeout(poll_status, 5000);
         }
-
-        console.log(`Value ${value}, max ${max}`);
     }
 
     function set_resource_id(text){
@@ -98,6 +109,9 @@
 
 {#if resource_id }
     <h2>Resource ID: <code>{resource_id}</code></h2>
+
+    
+
 
     {#if polling_error}
         <article>
@@ -138,7 +152,7 @@
     {/if}
 
 
-    <Chat {resource_id} /> 
+    <Chat {resource_id} {get_json}/> 
     {#if reviewer}
         <Review {resource_id} /> 
     {/if}

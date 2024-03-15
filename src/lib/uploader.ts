@@ -277,7 +277,7 @@ export class Uploader {
         this.render();
         const filename = `${this.resource_path.id}/${file.name}`;
         try {
-            await this.upload_file_firebase(filename, file, progress_callback)
+            let url = await this.upload_file_firebase(filename, file, progress_callback)
             //return await hypha.upload_file(file, filename, onUploadProgress);
             //
             //const url_put = await this.get_temporary_upload_url({filename});
@@ -285,6 +285,7 @@ export class Uploader {
             //console.log(url_put);
             //const config = {'onUploadProgress': progress_callback }; 
             //const response = await axios.put(url_put.data.url, file, config);
+            return url;
             
         } catch (error) {
             console.error("Upload failed!");
@@ -362,13 +363,17 @@ export class Uploader {
         this.status.message = "⌛ Trying to notify bioimage-bot for the new item...";
         this.status.step = UploaderStep.NOTIFYING_CI;
         this.render();
+        console.log(this.resource_path);
+        console.log(this.zip_url);
         console.debug("Notifying CI bot using:");
-        // trigger CI with the bioimageio bot endpoint
-        try {
-            const res = await this.ci_stage_firebase({
+        const data = {
                 'resource_path': this.resource_path!.id,
                 'package_url': this.zip_url,
-            });
+        };
+        console.debug(data);
+        // trigger CI with the bioimageio bot endpoint
+        try {
+            const res = await this.ci_stage_firebase(data);
             console.log(res);
             if(res.data.status !== 204){
                 throw new Error(`😬 Failed to reach to the bioimageio-bot, please report the issue to the admin team of bioimage.io: Code: ${res.data.status}, Message: ${res.data.message}`);
