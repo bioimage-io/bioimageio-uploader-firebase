@@ -4,7 +4,6 @@
     import {Route, router} from 'tinro'; 
     import { onMount } from 'svelte';
     import authStore from "./stores/authStore";
-    import { get_temporary_upload_url } from  "./stores/functions";
     //import {Home} from 'lucide-svelte';
     //import {fade} from 'svelte/transition';
     import Uploader from './components/Uploader/index.svelte';
@@ -163,6 +162,7 @@
         });
         return url;
     } 
+    uploader.ci_stage_firebase = httpsCallable(functions, 'stage');
 
     onMount(async () => {
         // Initialize Firebase

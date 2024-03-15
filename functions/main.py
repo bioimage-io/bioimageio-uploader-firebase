@@ -5,6 +5,7 @@ import os
 from typing import Any
 from datetime import timedelta
 
+import requests
 from minio import Minio
 
 from firebase_functions import https_fn
@@ -59,72 +60,27 @@ def stage(req: https_fn.CallableRequest) -> Any:
                                   message="The function must be called while authenticated.")
     # Perform staging, ie take input url and id and pass on to GH CI
     # using secrets
-    if not req.data.resource_path:
-        error_message = "Failed: resource_path not found in request json"
-        return { 'message': error_message, 'status': 500 }
-    if (not data.package_url):
-        error_message = "Failed: package_url not found in request json"
-        return { 'message': error_message, 'status': 500 }
-
-
-    const options = {
-        method: "POST",
-        headers: headers,
-        body: JSON.stringify({
-            'ref': GITHUB_BRANCH,
-            'inputs': {
-                'resource_id': data.resource_path,
-                'package_url': data.package_url,
-            }
-        })
-    };
-    let resp_obj = {};
-
-    try {
-        const resp = await fetch(GITHUB_URL, options);
-        if (resp.status === 204) {
-            // According to API docs, just expect a 204
-            resp_obj = { 'status': resp.status };
-        } else {
-            console.error(`Bad response from CI: ${resp.status}`);
-            console.error(`Bad response from CI: ${resp.body}`);
-            let text = "";
-            try {
-                text = await resp.text()
-            } catch {
-                text = "(no-text)";
-            }
-            const res = Response.json(
-                { 'message': `Failed to decode json from CI [status: ${resp.status}, content: ${text}]` },
-                { 'status': 500 });
-            res.headers.set("Access-Control-Allow-Origin", "*");
-            res.headers.append("Access-Control-Allow-Headers", "*");
-            res.headers.append("Access-Control-Allow-Methods", "*");
-            return res;
-        }
-
-    } catch (err) {
-        console.error("Failed to fetch from CI endpoint:");
-        console.error(GITHUB_URL);
-        console.error(err);
-        const res = Response.json(
-            { 'message': `Failed to fetch from CI endpoint: ${err.message}` },
-            { status: 500 });
-        res.headers.set("Access-Control-Allow-Origin", "*");
-        res.headers.append("Access-Control-Allow-Headers", "*");
-        res.headers.append("Access-Control-Allow-Methods", "*");
-        return res;
+    resource_path = req.data['resource_path']
+    package_url = req.data['package_url']
+    headers = {
+        'Accept': 'application/vnd.github.v3+json',
+        'Authorization': f"token {os.environ['GITHUB_TOKEN']}"
     }
-    // const res = new Response("Success");
-    const reply_obj = { "message": `Contacted CI: ${resp_obj.message}`, 'status': 200 };
-    console.log("Response from CI:");
-    console.log(resp_obj);
-    const res = Response.json(reply_obj);
-    res.headers.set("Access-Control-Allow-Origin", "*");
-    res.headers.append("Access-Control-Allow-Headers", "*");
-    res.headers.append("Access-Control-Allow-Methods", "*");
-    return res;
 
+    data = {
+            'ref': os.environ['GITHUB_BRANCH'],
+            'inputs': {
+                'resource_id': resource_path,
+                'package_url': package_url,
+            }
+    }
+
+    resp = requests.post(os.environ['GITHUB_URL_STAGE'], json=data, headers=headers)
+    if resp.status_code == 204:
+        # According to API docs, just expect a 204
+        return { 'status': resp.status_code }
+    else:
+        return {'message': "Failed", 'status':500}
 
 
 @https_fn.on_call()
@@ -136,3 +92,26 @@ def publish(req: https_fn.CallableRequest) -> Any:
     if not _is_reviewer(email):
         raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.FAILED_PRECONDITION,
                                   message="The function must be called while authenticated as a reviewer.")
+    # Perform publish, ie take input url and id and pass on to GH CI
+    # using secrets
+    resource_path = req.data['resource_path']
+    package_url = req.data['package_url']
+    headers = {
+        'Accept': 'application/vnd.github.v3+json',
+        'Authorization': f"token {os.environ['GITHUB_TOKEN']}"
+    }
+
+    data = {
+            'ref': os.environ['GITHUB_BRANCH'],
+            'inputs': {
+                'resource_id': resource_path,
+                'package_url': package_url,
+            }
+    }
+
+    resp = requests.post(os.environ['GITHUB_URL_PUBLISH'], json=data, headers=headers)
+    if resp.status_code == 204:
+        # According to API docs, just expect a 204
+        return { 'status': resp.status_code }
+    else:
+        return {'message': "Failed", 'status':500}

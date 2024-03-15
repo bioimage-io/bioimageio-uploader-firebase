@@ -331,7 +331,7 @@ export class Uploader {
         this.zip_url = await this.upload_file(zipfile, null);
 
         try {
-            await this.notify_ci_bot();
+            const res = await this.ci_stage(); 
         } catch (err) {
             console.error("Nofiying the ci-bot failed:");
             console.error(err);
@@ -358,36 +358,17 @@ export class Uploader {
         this.render_callbacks = []; 
     }
 
-    async notify_ci_bot() {
-        if (!notify_ci_url) {
-            console.error("notify_ci_url not set")
-            throw new Error("notify_ci_url not set");
-        }
-        const payload = { 'resource_path': this.resource_path!.id, 'package_url': this.zip_urls!.get};
+    async ci_stage() {
         this.status.message = "⌛ Trying to notify bioimage-bot for the new item...";
         this.status.step = UploaderStep.NOTIFYING_CI;
         this.render();
         console.debug("Notifying CI bot using:");
-        console.debug(payload)
         // trigger CI with the bioimageio bot endpoint
         try {
-            const resp = await fetch(notify_ci_url, {
-                method: 'POST',
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(payload)
+            const res = await this.ci_stage_firebase({
+                'resource_id': this.resource_path!.id,
+                'package_url': this.zip_url,
             });
-            if (resp.status === 200) {
-                const ci_resp = (await resp.json());
-                if (ci_resp.status == 200) {
-                    this.status.message = `🎉 bioimage-bot has successfully detected the item: ${ci_resp.message}`;
-                } else {
-                    throw new Error(`😬 bioimage-bot notification ran into an issue [${ci_resp.status}]: ${ci_resp.message}`);
-                }
-
-            } else {
-                const ci_resp = await resp.text();
-                throw new Error(`😬 bioimage-bot failed to detected the new item, please report the issue to the admin team of bioimage.io: ${ci_resp}`);
-            }
         } catch (err) {
             throw new Error(`😬 Failed to reach to the bioimageio-bot, please report the issue to the admin team of bioimage.io: ${err}`);
         }
