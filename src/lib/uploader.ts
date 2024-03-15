@@ -90,7 +90,7 @@ export class Uploader {
     //storage_info: any = null;
     //token: string | null = '';
     validator: any = null
-    zip_urls: { get: string, put: string } | null = null;
+    zip_url: string | null = null;
     //this.status = {message:"", is_finished: false, is_uploading: false, ci_failed: false};
 
     constructor() {
@@ -187,7 +187,7 @@ export class Uploader {
     }
 
     load_validator() {
-        alert("Code replacement validator");
+        //alert("Code replacement alidator");
     }
 
     /**
@@ -222,11 +222,10 @@ export class Uploader {
     }
 
     async validate() {
-
+        return await this.validate_json_schema();
         /*
          * Lazy loading of validator
          */
-        throw new Error("IMPLEMENT ME - REPLACEMENT VALIDATOR");
         //const validator = await this.load_validator(hypha);
         let rdf = load_yaml(yaml.dump(this.rdf));
         rdf = clean_rdf(rdf);
@@ -273,34 +272,19 @@ export class Uploader {
             throw new Error("Unable to upload, resource_path not set");
         };
 
-        let onUploadProgress: (evt) => void;
-        if (typeof progress_callback === "function") {
-            onUploadProgress = (progressEvent) => {
-                this.status.upload_progress_value = `${progressEvent.loaded}`;
-                this.status.upload_progress_max = `${progressEvent.total}`;
-                console.log("Progress (with callback):", this.status);
-                //var percentCompleted = Math.round( (progressEvent.loaded * 100) / progressEvent.total );
-                progress_callback(`{progressEvent.loaded}`, `{progressEvent.total}`);
-                this.render();
-            };
-        } else {
-            onUploadProgress = (progressEvent) => {
-                this.status.upload_progress_value = `${progressEvent.loaded}`;
-                this.status.upload_progress_max = `${progressEvent.total}`;
-                console.log("Progress (no callback):", this.status);
-                this.render();
-            };
-        }
-
         this.status.message = "Uploading";
         this.status.step = UploaderStep.UPLOADING;
         this.render();
         const filename = `${this.resource_path.id}/${file.name}`;
         try {
+            await this.upload_file_firebase(filename, file, progress_callback)
             //return await hypha.upload_file(file, filename, onUploadProgress);
-            const url_put = await this.get_temporary_upload_url({filename});
-            const config = {'onUploadProgress': progress_callback }; 
-            const response = await axios.put(url_put, file, config);
+            //
+            //const url_put = await this.get_temporary_upload_url({filename});
+            //console.log("Using put-url:");
+            //console.log(url_put);
+            //const config = {'onUploadProgress': progress_callback }; 
+            //const response = await axios.put(url_put.data.url, file, config);
             
         } catch (error) {
             console.error("Upload failed!");
@@ -344,7 +328,7 @@ export class Uploader {
         const zipfile = await this.create_zip();
         this.render();
 
-        this.zip_urls = await this.upload_file(zipfile, null);
+        this.zip_url = await this.upload_file(zipfile, null);
 
         try {
             await this.notify_ci_bot();

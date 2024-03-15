@@ -17,6 +17,8 @@
     import { initializeApp } from "firebase/app";
     import { getAnalytics } from "firebase/analytics";
     import * as firebaseui from 'firebaseui';
+
+    import { getStorage, ref, uploadBytes, uploadBytesResumable, getDownloadURL } from "firebase/storage";
     import 'firebaseui/dist/firebaseui.css';
     import { getFunctions, httpsCallable } from "firebase/functions";
     import { Uploader as UploaderClass } from './lib/uploader';
@@ -111,11 +113,56 @@
     const app = initializeApp(firebaseConfig);
     const analytics = getAnalytics(app);
     const functions = getFunctions(app);
+    // Create a root reference
+    const storage = getStorage();
+
 
     uploader.get_temporary_upload_url = httpsCallable(functions, 'get_temporary_upload_url');
+    uploader.upload_file_firebase = async (filepath, file, progress_callback)=>{
+        const storage_ref = ref(storage, filepath);
+        const uploadTask = uploadBytesResumable(storage_ref, file);
+        const download_url = "";
+        let self = uploader;
 
-    
+        let url = await new Promise(function(resolve, reject) {
 
+            // Listen for state changes, errors, and completion of the upload.
+            uploadTask.on('state_changed',
+                (snapshot) => {
+                    // Get task progress, including the number of bytes uploaded and the total number of bytes to be uploaded
+                    if(progress_callback !== null)
+                        progress_callback(snapshot.bytesTransferred, snapshot.totalBytes);
+                }, 
+                (error) => {
+                    // A full list of error codes is available at
+                    // https://firebase.google.com/docs/storage/web/handle-errors
+                    switch (error.code) {
+                        case 'storage/unauthorized':
+                        // User doesn't have permission to access the object
+                        break;
+                    case 'storage/canceled':
+                        // User canceled the upload
+                        break;
+
+                        // ...
+
+                    case 'storage/unknown':
+                        // Unknown error occurred, inspect error.serverResponse
+                        break;
+                    }
+                }, 
+                async () => {
+                    // Upload completed successfully, now we can get the download URL
+                    let download_url = await getDownloadURL(uploadTask.snapshot.ref);
+                    self.download_url = download_url;
+                    console.log(download_url);
+                    console.log(self);
+                    resolve(download_url);
+                }
+            );
+        });
+        return url;
+    } 
 
     onMount(async () => {
         // Initialize Firebase
