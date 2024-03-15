@@ -83,7 +83,7 @@ def stage(req: https_fn.CallableRequest) -> Any:
         return {'message': f"Failed :(  {resp.content}", 'status':500}
 
 
-@https_fn.on_call()
+@https_fn.on_call(secrets=["GITHUB_TOKEN"])
 def publish(req: https_fn.CallableRequest) -> Any:
     if req.auth is None:
         raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.FAILED_PRECONDITION,
