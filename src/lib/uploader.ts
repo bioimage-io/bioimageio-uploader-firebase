@@ -369,8 +369,9 @@ export class Uploader {
                 'resource_path': this.resource_path!.id,
                 'package_url': this.zip_url,
             });
-            if(res.status !== 204){
-                throw new Error(`😬 Failed to reach to the bioimageio-bot, please report the issue to the admin team of bioimage.io: ${res.message}`);
+            console.log(res);
+            if(res.data.status !== 204){
+                throw new Error(`😬 Failed to reach to the bioimageio-bot, please report the issue to the admin team of bioimage.io: Code: ${res.data.status}, Message: ${res.data.message}`);
             } 
         } catch (err) {
             throw new Error(`😬 Error calling bioimageio-bot, please report the issue to the admin team of bioimage.io: ${err}`);

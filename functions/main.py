@@ -66,7 +66,6 @@ def stage(req: https_fn.CallableRequest) -> Any:
         'Accept': 'application/vnd.github.v3+json',
         'Authorization': f"token {os.environ['GITHUB_TOKEN']}"
     }
-
     data = {
             'ref': os.environ['GITHUB_BRANCH'],
             'inputs': {
@@ -74,8 +73,13 @@ def stage(req: https_fn.CallableRequest) -> Any:
                 'package_url': package_url,
             }
     }
+    print("NOTIFYING GITHUB:")
+    print("headers")
+    print(headers)
+    print("data")
+    print(data)
 
-    resp = requests.post(os.environ['GITHUB_URL_STAGE'], json=data, headers=headers)
+    resp = requests.post(os.environ['GITHUB_URL_STAGE'], data=data, headers=headers)
     if resp.status_code == 204:
         # According to API docs, just expect a 204
         return { 'status': resp.status_code }
