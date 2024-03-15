@@ -10,6 +10,7 @@
     import Review from './Review.svelte';
 
     export let resource_id="";
+    export let version_number; 
     export let get_json;
 
     let step = 0;
@@ -115,20 +116,8 @@
 {/if}
 
 {#if resource_id }
-    <h2>Resource ID: <code>{resource_id}</code></h2>
+    <h2>Resource ID: <a href="#/status/{resource_id}">{resource_id}</a> - staged - {version_number}</h2>
 
-    <h3>Versions</h3>
-
-    {#if versions}
-        {#each Object.entries(versions) as [name, items]}
-            <h4>{name}</h4>
-            <ul>
-            {#each Object.entries(items) as [version_number, details]}
-                <li><a href="#/status/{resource_id}/{name}/{version_number}">{version_number}</a> [{details.timestamp}] : {details.status.name}</li>    
-            {/each }
-            </ul>
-        {/each}
-    {/if}
 
 
     {#if polling_error}

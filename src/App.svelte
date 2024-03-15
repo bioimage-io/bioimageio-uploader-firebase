@@ -236,7 +236,7 @@
     <Route path="/status/:resource_id/:version" let:meta>
         <StatusPublished resource_id={meta.params.resource_id} version={meta.params.version} { get_json } />
     </Route>
-    <Route path="/status/:resource_id/staged/:version" let:meta>
-        <StatusStaged resource_id={meta.params.resource_id} version={meta.params.version} { get_json } />
+    <Route path="/status/:resource_id/staged/:version_number" let:meta>
+        <StatusStaged resource_id={meta.params.resource_id} version_number={meta.params.version_number} { get_json } />
     </Route>
 </Transition>
