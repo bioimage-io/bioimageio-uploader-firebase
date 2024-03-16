@@ -53,7 +53,7 @@ class UploaderStatus {
 }
 
 
-function load_yaml(text){
+function load_yaml(text: string){
     // Need the schema here to avoid loading Date objects
     const schema = yaml.CORE_SCHEMA;// Schema.create(yaml.CORE_SCHEMA, []);
     // const yaml.CORE_SCHEMA.extend([...]);
@@ -76,6 +76,7 @@ export class Uploader {
     //connection_retry = 0;
     error_object: Error | null = null;
     files: File[] = [];
+    firebase_functions: any;
     //login_url: string | null = null;
     user_email: string | null  = ''; 
     resource_path: ResourceId | null = null;
@@ -105,6 +106,11 @@ export class Uploader {
 
     async init() {
     }
+
+    register_firebase_functions(firebase_functions: any){
+        this.firebase_functions = firebase_functions;
+    }
+
 
     reset() {
         this.resource_path = null;
@@ -249,8 +255,8 @@ export class Uploader {
         return true;
     }
 
-    ready_to_publish(): boolean{
-        console.log("Checking ready to publish");
+    ready_to_stage(): boolean{
+        console.log("Checking ready to stage");
         if (!this.ready_for_review()) return false;
         if (!this.resource_path) return false;
         if (!this.user_email) return false;
@@ -271,13 +277,19 @@ export class Uploader {
         if (!this.resource_path) {
             throw new Error("Unable to upload, resource_path not set");
         };
+        if(!this.firebase_functions){
+            throw new Error("Firebase functions not set on uploader");
+        }
+        if(!this.firebase_functions.upload_file){
+            throw new Error("Firebase functions does not have an 'upload_file' entry");
+        }
 
         this.status.message = "Uploading";
         this.status.step = UploaderStep.UPLOADING;
         this.render();
         const filename = `${this.resource_path.id}/${file.name}`;
         try {
-            let url = await this.upload_file_firebase(filename, file, progress_callback)
+            let url = await this.firebase_functions.upload_file(filename, file, progress_callback)
             //return await hypha.upload_file(file, filename, onUploadProgress);
             //
             //const url_put = await this.get_temporary_upload_url({filename});
@@ -323,13 +335,17 @@ export class Uploader {
         return zipfile;
     }
 
-    async publish() {
+    async stage() {
         console.log("Running upload steps (zip, upload, notify CI)");
         this.render();
         const zipfile = await this.create_zip();
         this.render();
-
-        this.zip_url = await this.upload_file(zipfile, null);
+        
+        try{
+            this.zip_url = await this.upload_file(zipfile, null);
+        }catch(err){
+            throw err;
+        }
 
         try {
             const res = await this.ci_stage(); 
@@ -363,6 +379,12 @@ export class Uploader {
         this.status.message = "⌛ Trying to notify bioimage-bot for the new item...";
         this.status.step = UploaderStep.NOTIFYING_CI;
         this.render();
+        if(!this.firebase_functions){
+            throw new Error("Firebase functions not set on uploader");
+        }
+        if(!this.firebase_functions.stage){
+            throw new Error("Firebase functions does not have a 'stage' entry");
+        }
         console.log(this.resource_path);
         console.log(this.zip_url);
         console.debug("Notifying CI bot using:");
@@ -373,7 +395,7 @@ export class Uploader {
         console.debug(data);
         // trigger CI with the bioimageio bot endpoint
         try {
-            const res = await this.ci_stage_firebase(data);
+            const res = await this.firebase_functions.stage(data);
             console.log(res);
             if(res.data.status !== 204){
                 throw new Error(`😬 Failed to reach to the bioimageio-bot, please report the issue to the admin team of bioimage.io: Code: ${res.data.status}, Message: ${res.data.message}`);

@@ -9,9 +9,12 @@
     import Chat from './Chat.svelte';
     import Review from './Review.svelte';
 
+    import { functions } from '../lib/firebase';
+    
     export let resource_id="";
     export let version_number; 
-    export let get_json;
+
+    const get_json = functions.get_json;
 
     let step = 0;
     let messages = [];
@@ -33,16 +36,11 @@
     let logged_in: bool;
 
     let versions;
+    let status;
+    let chats=[]; 
+    let logs;
 
     onMount(async() => {
-        //if(hypha !== null){
-
-            //await hypha.login(); 
-            //reviewer = hypha.is_reviewer();
-            //logged_in = hypha.is_logged_in();
-                
-            //console.log("Logged in :", logged_in);
-        //} 
     });
     ///
     /// Clear timeout when navigating away from this page
@@ -51,29 +49,26 @@
         clearTimeout(timeout_id);
     });
 
-
     async function poll_status(){
         if(resource_id){ 
             try{
                 if (get_json){
                     //console.log(get_json);
                     console.log("Get status:");
-                    const resp_v = await get_json({'url': `https://uk1s3.embassy.ebi.ac.uk/public-datasets/sandbox.bioimage.io/${resource_id}/versions.json`});
-                    const resp = await get_json({'url': `https://uk1s3.embassy.ebi.ac.uk/public-datasets/sandbox.bioimage.io/${resource_id}/staged/1/details.json`});
-                    console.log(resp);
-                    const data = resp.data;
-                    versions = resp_v.data;
-                    console.log(versions);
+                    const resp_version = await get_json({'url': `https://uk1s3.embassy.ebi.ac.uk/public-datasets/sandbox.bioimage.io/${resource_id}/versions.json`});
+                    const resp_log = await get_json({'url': `https://uk1s3.embassy.ebi.ac.uk/public-datasets/sandbox.bioimage.io/${resource_id}/staged/${version_number}/logs.json`});
+                    const resp_chat = await get_json({'url': `https://uk1s3.embassy.ebi.ac.uk/public-datasets/sandbox.bioimage.io/${resource_id}/staged/${version_number}/chat.json`});
+                    console.log(resp_version.data);
+                    status = resp_version.data.staged[version_number].status;
+                    console.log(status);
+                    chats = resp_chat.data.messages;
+                    console.log(chats);
+                    logs = resp_log.data;
 
                 //const resp = await refresh_status(resource_id);
-                    last_message = data.status.name;
-                    messages = data.messages;
-                    if((!Array.isArray(messages)) || (!is_string(last_message))){
-                        console.debug(resp);
-                        throw new Error("Unable to get status messages from server response");
-                    }
-                    step = data.status.step;
-                    num_steps = data.status.num_steps;
+                    last_message = status.description;
+                    step = status.step;
+                    num_steps = status.num_steps;
                     polling_error = false;
                 }else{
                     console.debug("get_json not set");
@@ -87,7 +82,7 @@
                 polling_error = true;
                 return;
             }
-            is_finished = last_message.startsWith("Publishing complete");
+            if(last_message) is_finished = last_message.startsWith("Publishing complete");
             if(step > 0){
                 //value = `{status_step}`; 
                 value = `${step}`; 
@@ -110,10 +105,6 @@
     if(resource_id) poll_status();
 
 </script>
-
-{#if !logged_in}
-    <button>Login to access Reviewer tools</button>
-{/if}
 
 {#if resource_id }
     <h2>Resource ID: <a href="#/status/{resource_id}">{resource_id}</a> - staged - {version_number}</h2>
@@ -158,14 +149,17 @@
         </article> 
     {/if}
 
+    {#if logged_in}
+        <Chat {resource_id} staged={true} version_number={version_number} {get_json}/> 
+        {#if reviewer}
+            <Review {resource_id} /> 
+        {/if}
+    {:else}
 
-    <Chat {resource_id} {get_json}/> 
-    {#if reviewer}
-        <Review {resource_id} /> 
+        <article>Login to chat and maintainer tools for maintainers</article>
+
     {/if}
-    <!--{#if notify_ci_message}-->
-        <!--<p>🤖: {notify_ci_message}</p>-->
-    <!--{/if}-->
+
 {:else}
     <form>
     <SingleLineInputs>
