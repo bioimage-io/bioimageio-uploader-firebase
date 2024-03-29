@@ -2,6 +2,7 @@
     import { onMount, onDestroy } from 'svelte';
     import FullScreenConfetti from './FullScreenConfetti.svelte';
     import SingleLineInputs from './SingleLineInputs.svelte';
+    import ErrorBox from './ErrorBox.svelte';
     import refresh_status from "../lib/status.ts";
     import { Search } from 'lucide-svelte';
     import { is_string } from '../lib/utils.ts';
@@ -20,7 +21,7 @@
     let messages = [];
     let last_message = "Getting status...";
     let num_steps;
-    let polling_error = false;
+    let error = "";
     //let error;
     //let error_element;
     //let last_error_object;
@@ -69,7 +70,7 @@
                     last_message = status.description;
                     step = status.step;
                     num_steps = status.num_steps;
-                    polling_error = false;
+                    error = "";
                 }else{
                     console.debug("get_json not set");
                 }
@@ -79,7 +80,7 @@
                 messages = [];
                 console.error("Error polling status:");
                 console.error(err);
-                polling_error = true;
+                error = `😬 Opps - an error occurred while getting the status: ${err.message}`
                 return;
             }
             if(last_message) is_finished = last_message.startsWith("Publishing complete");
@@ -110,12 +111,8 @@
     <h2>Resource ID: <a href="#/status/{resource_id}">{resource_id}</a> - staged - {version_number}</h2>
 
 
-
-    {#if polling_error}
-        <article>
-            😬 Opps - an error occurred while getting the status. 
-        </article>
-    {:else}
+    <ErrorBox {error} />
+    {#if !error}
         <article>Status:
             {#if last_message}
                 <code>{last_message}</code>

@@ -2,6 +2,7 @@
     import { onMount, onDestroy } from 'svelte';
     import FullScreenConfetti from './FullScreenConfetti.svelte';
     import SingleLineInputs from './SingleLineInputs.svelte';
+    import ErrorBox from './ErrorBox.svelte';
     import refresh_status from "../lib/status.ts";
     import { Search } from 'lucide-svelte';
     import { is_string } from '../lib/utils.ts';
@@ -12,7 +13,7 @@
     export let resource_id="";
     export let get_json;
 
-    let polling_error = false;
+    let error = null;
     let timeout_id;
     let versions;
 
@@ -33,14 +34,13 @@
             try{
                 const resp = await get_json({'url': `https://uk1s3.embassy.ebi.ac.uk/public-datasets/sandbox.bioimage.io/${resource_id}/versions.json`});
                 versions = resp.data;
-                polling_error = false;
+                error = "";
             }catch(err){
                 //messages = ["Error polling status 😬. Please let the dev-team know 🙏"];
-                last_message = "Error polling versions 😬. Please let the dev-team know 🙏";
+                error = "Error polling versions 😬. Please let the dev-team know 🙏";
                 messages = [];
                 console.error("Error polling status:");
                 console.error(err);
-                polling_error = true;
                 return;
             }
         }
@@ -52,6 +52,8 @@
 
 {#if resource_id }
     <h2>Resource ID: <code>{resource_id}</code></h2>
+
+    <ErrorBox {error} />
 
     <h3>Versions</h3>
 

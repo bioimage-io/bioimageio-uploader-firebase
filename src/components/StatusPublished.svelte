@@ -16,7 +16,7 @@
     let messages = [];
     let last_message = "Getting status...";
     let num_steps;
-    let polling_error = false;
+    let error = false;
     //let error;
     //let error_element;
     //let last_error_object;
@@ -73,7 +73,7 @@
                     }
                     step = data.status.step;
                     num_steps = data.status.num_steps;
-                    polling_error = false;
+                    error = false;
                 }else{
                     console.debug("get_json not set");
                 }
@@ -83,7 +83,7 @@
                 messages = [];
                 console.error("Error polling status:");
                 console.error(err);
-                polling_error = true;
+                error = true;
                 return;
             }
             is_finished = last_message.startsWith("Publishing complete");
@@ -131,11 +131,8 @@
     {/if}
 
 
-    {#if polling_error}
-        <article>
-            😬 Opps - an error occurred while getting the status. 
-        </article>
-    {:else}
+    <ErrorBox {error} />
+    {#if !error}
         <article>Status:
             {#if last_message}
                 <code>{last_message}</code>
